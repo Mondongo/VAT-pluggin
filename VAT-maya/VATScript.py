@@ -15,7 +15,6 @@ def create_vat_window(*args):
  
     cmds.window(winName, width=winWidth, title=winTitle)
     mc = cmds.columnLayout()
-
     cmds.text(winTitle, align="center", width=winWidth, height=50, font="boldLabelFont")
     cmds.text(" 1. first select the mesh that you want to generate VAT")
     cmds.text(" 2. select timeline frame range")
@@ -31,9 +30,12 @@ def create_vat_window(*args):
 def create_vat_texture(*args):
     mesh = get_mesh()
     vertices = get_vertices(mesh)
-    vertxPos = get_vertxPos(vertices)
-    print(vertxPos)
 
+
+    for x in range(1,21):
+        cmds.currentTime(x, edit=True)
+        vertxPos = get_vertxPos(vertices)
+        print(vertxPos)
 
 
 

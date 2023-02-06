@@ -30,8 +30,12 @@ def create_vat_window(*args):
 def create_vat_texture(*args):
     mesh = get_mesh()
     vertices = get_vertices(mesh)
-    vertxPos = get_vertxPos(vertices)
-    print(vertxPos)
+    
+    for x in range(1,21):
+        cmds.currentTime(x, edit=True)
+        vertxPos = get_vertxPos(vertices)
+        print(vertxPos)
+
 
 
 def get_mesh():

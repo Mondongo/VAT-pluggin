@@ -235,3 +235,67 @@ def select_mesh_vertices(*args):
 
 #run the plugin ----------->
 create_vat_window()
+
+
+
+
+
+
+
+
+
+
+
+import maya.cmds as cmds
+winWidth = 280
+cmds.window(width=winWidth)
+cmds.columnLayout()
+cmds.rowLayout(numberOfColumns=2, columnWidth2=(winWidth/2, winWidth/2))
+cmds.textFieldGrp( label='Group 1')
+cmds.textFieldGrp( label='Group 2')
+cmds.showWindow()
+
+
+
+#======================================================================>
+import maya.cmds as cmds
+
+
+#global vars ----------->
+winName = "VATwindow"
+winTitle = "Vertex Animation Texture Generator (VAT)"
+winWidth = 280
+
+
+#main functs ----------->
+def create_vat_window(*args):
+    if cmds.window(winName, exists=True):
+        cmds.deleteUI(winName)
+ 
+    cmds.window(winName, width=winWidth, title=winTitle)
+    mc = cmds.columnLayout()
+
+    cmds.text(winTitle, align="center", width=winWidth, height=50)
+    cmds.separator(height=20)
+
+
+    tmpWidth = [winWidth*0.3, winWidth*0.5, winWidth*0.2]
+    mc.textFieldGrp(label='txt field', w=winWidth, columnWidth3=tmpWidth)
+
+    tmpWidth = [winWidth*0.3, winWidth*0.5, winWidth*0.2]
+    cmds.rowLayout(numberOfColumns=4, columnWidth3=tmpWidth)
+    sep = winWidth*.4
+    cmds.text(label='first frame', align='center', width=sep)
+    cmds.textField(width=sep)
+    cmds.text(label='last frame', align='center', width=sep)
+    cmds.textField(width=sep)
+    cmds.setParent(mc)
+
+    cmds.separator(height=20)
+    cmds.button(label='Create VAT texture', command=create_vat_texture, width=winWidth, height=50)
+    cmds.showWindow()
+
+
+
+#run the plugin ----------->
+create_vat_window()

@@ -10,7 +10,7 @@ start_frame_text = None
 end_frame_text = None
 
 
-#main functs ----------->
+#create window ----------->
 def create_vat_window(*args):
     if cmds.window(winName, exists=True):
         cmds.deleteUI(winName)
@@ -32,10 +32,14 @@ def create_vat_window(*args):
     cmds.showWindow()
 
 
+#main funct ----------->
 def create_vat_texture(*args):
-    sanitize_frame_values()
+    frame_range = sanitize_frame_values()
     mesh = get_mesh()
     vertices = get_vertices(mesh)
+
+
+    return
     for x in range(1,21):
         cmds.currentTime(x, edit=True)
         vertxPos = get_vertxPos(vertices)
@@ -43,14 +47,21 @@ def create_vat_texture(*args):
 
 
 
-
+#misc functs ----------->
 def sanitize_frame_values():
-    global start_frame
-    start_frame = int(cmds.textFieldGrp(start_frame_text, query=True, text=True))
-    global end_frame
-    end_frame = int(cmds.textFieldGrp(end_frame_text, query=True, text=True))
+    sf_value = cmds.textFieldGrp(start_frame_text, query=True, text=True)
+    ef_value = cmds.textFieldGrp(end_frame_text, query=True, text=True)
+
+    if sf_value == "" or ef_value == "":
+        raise Exception("start frame or end frame cant be empty")
+
+    start_frame = int(sf_value)
+    end_frame = int(ef_value)
+    
     if end_frame < start_frame:
         raise Exception("start frame should be lower than end frame")
+
+    return start_frame, end_frame
 
 def get_mesh():
     sel = cmds.ls(sl=True,type='mesh',dag=True, long=True)

@@ -6,6 +6,8 @@ import maya.cmds as cmds
 winName = "VATwindow"
 winTitle = "Vertex Animation Texture Generator (VAT)"
 winWidth = 280
+start_frame_text = None
+end_frame_text = None
 
 
 #main functs ----------->
@@ -21,22 +23,34 @@ def create_vat_window(*args):
     cmds.text(" 3. hit bake VAT texture")
     cmds.separator(height=20)
     cw = winWidth/2
-    cmds.textFieldGrp( label='start frame:', columnWidth2=[cw,cw] ,columnAlign=[1,"center"])
-    cmds.textFieldGrp( label='end frame:', columnWidth2=[cw,cw] ,columnAlign=[1,"center"])
+    global start_frame_text
+    start_frame_text = cmds.textFieldGrp(label='start frame:', columnWidth2=[cw,cw] ,columnAlign=[1,"center"])
+    global end_frame_text
+    end_frame_text = cmds.textFieldGrp(label='end frame:', columnWidth2=[cw,cw] ,columnAlign=[1,"center"])
     cmds.separator(height=20)
     cmds.button(label='Create VAT texture', command=create_vat_texture, width=winWidth, height=50)
     cmds.showWindow()
 
+
 def create_vat_texture(*args):
+    sanitize_frame_values()
     mesh = get_mesh()
     vertices = get_vertices(mesh)
-    
     for x in range(1,21):
         cmds.currentTime(x, edit=True)
         vertxPos = get_vertxPos(vertices)
         print(vertxPos)
 
 
+
+
+def sanitize_frame_values():
+    global start_frame
+    start_frame = int(cmds.textFieldGrp(start_frame_text, query=True, text=True))
+    global end_frame
+    end_frame = int(cmds.textFieldGrp(end_frame_text, query=True, text=True))
+    if end_frame < start_frame:
+        raise Exception("start frame should be lower than end frame")
 
 def get_mesh():
     sel = cmds.ls(sl=True,type='mesh',dag=True, long=True)

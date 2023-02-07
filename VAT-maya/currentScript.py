@@ -16,7 +16,7 @@ def create_vat_window(*args):
         cmds.deleteUI(winName)
  
     cmds.window(winName, width=winWidth, title=winTitle)
-    mc = cmds.columnLayout()
+    cmds.columnLayout()
     cmds.text(winTitle, align="center", width=winWidth, height=50, font="boldLabelFont")
     cmds.text(" 1. first select the mesh that you want to generate VAT")
     cmds.text(" 2. select timeline frame range")

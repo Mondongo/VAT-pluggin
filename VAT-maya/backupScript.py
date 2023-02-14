@@ -299,3 +299,16 @@ def create_vat_window(*args):
 
 #run the plugin ----------->
 create_vat_window()
+
+
+
+
+
+
+
+
+# return
+# for x in range(1,21):
+# cmds.currentTime(x, edit=True)
+# vertxPos = get_vertxPos(vertices)
+# print(vertxPos)

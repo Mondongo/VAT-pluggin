@@ -19,7 +19,7 @@ def create_vat_window(*args):
     cmds.columnLayout()
     cmds.text(winTitle, align="center", width=winWidth, height=50, font="boldLabelFont")
     cmds.text(" 1. first select the mesh that you want to generate VAT")
-    cmds.text(" 2. select timeline frame range")
+    cmds.text(" 2. select the timeline range you want to bake")
     cmds.text(" 3. hit bake VAT texture")
     cmds.separator(height=20)
     cw = winWidth/2
@@ -37,13 +37,11 @@ def create_vat_texture(*args):
     frame_range = sanitize_frame_values()
     mesh = get_mesh()
     vertices = get_vertices(mesh)
+    vert_list = get_vertList(frame_range, vertices)
+    #print(vert_list)
 
 
-    return
-    for x in range(1,21):
-        cmds.currentTime(x, edit=True)
-        vertxPos = get_vertxPos(vertices)
-        print(vertxPos)
+
 
 
 
@@ -61,7 +59,9 @@ def sanitize_frame_values():
     if end_frame < start_frame:
         raise Exception("start frame should be lower than end frame")
 
-    return start_frame, end_frame
+    total_frames = (end_frame - start_frame)+1
+
+    return start_frame, end_frame,total_frames
 
 def get_mesh():
     sel = cmds.ls(sl=True,type='mesh',dag=True, long=True)
@@ -80,6 +80,22 @@ def get_vertxPos(vertices):
     for vert in vertices:
         pos.append(cmds.xform(vert, query=True, worldSpace=True, translation=True))
     return pos
+
+def get_vertList(f_range, verts):
+    f_list = []
+
+    for f in range(f_range[0], f_range[1] + 1):
+        cmds.currentTime(f, edit=True)
+        list_index = f - f_range[0]
+        
+        v_list = []
+        for v in verts:
+            v_pos = cmds.xform(v, query=True, worldSpace=True, translation=True)
+            v_list.append(v_pos)
+
+        f_list.append(v_list)
+
+    return f_list
 
 
 

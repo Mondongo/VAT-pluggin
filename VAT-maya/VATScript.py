@@ -34,11 +34,13 @@ def create_vat_window(*args):
 
 #main funct ----------->
 def create_vat_texture(*args):
-    frame_range = sanitize_frame_values()
+    start_frame, end_frame = sanitize_frame_values()
     mesh = get_mesh()
     vertices = get_vertices(mesh)
-    vert_list = get_vertList(frame_range, vertices)
-    print(vert_list[0][2][2])
+    vertex_data_raw, larger_abs = get_vertex_data_raw(start_frame, end_frame, vertices)
+    vertex_data = get_vertex_data(vertex_data_raw)
+
+    print(remap(30,0,30,0,1))
 
 
 
@@ -59,9 +61,9 @@ def sanitize_frame_values():
     if end_frame < start_frame:
         raise Exception("start frame should be lower than end frame")
 
-    total_frames = (end_frame - start_frame)+1
+    #total_frames = (end_frame - start_frame)+1
 
-    return start_frame, end_frame,total_frames
+    return start_frame, end_frame
 
 def get_mesh():
     sel = cmds.ls(sl=True,type='mesh',dag=True, long=True)
@@ -81,25 +83,32 @@ def get_vertxPos(vertices):
         pos.append(cmds.xform(vert, query=True, worldSpace=True, translation=True))
     return pos
 
-def get_vertList(f_range, verts):
+def get_vertex_data_raw(start_frame, end_frame, vertices):
+    larger_abs = 0
     f_list = []
 
-    for f in range(f_range[0], f_range[1] + 1):
+    for f in range(start_frame, end_frame + 1):
         cmds.currentTime(f, edit=True)
-        list_index = f - f_range[0]
-        
         v_list = []
-        for v in verts:
+
+        for v in vertices:
             v_pos = cmds.xform(v, query=True, worldSpace=True, translation=True)
+
+            for pos in v_pos:
+                if pos > abs(larger_abs):
+                    larger_abs = pos
+
             v_list.append(v_pos)
 
         f_list.append(v_list)
 
-    return f_list
+    return f_list, larger_abs
 
+def get_vertex_data(vertex_data_raw):
+    return
 
-
-
+def remap(num, old_min, old_max, new_min, new_max):
+    return (((num - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
 
 
 #run the plugin ----------->

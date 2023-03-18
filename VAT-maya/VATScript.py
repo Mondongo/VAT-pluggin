@@ -40,7 +40,7 @@ def create_vat_texture(*args):
     vertex_data_raw, larger_abs = get_vertex_data_raw(start_frame, end_frame, vertices)
     vertex_data = get_vertex_data(vertex_data_raw)
 
-    print(remap(30,0,30,0,1))
+    print(larger_abs)
 
 
 
@@ -95,8 +95,8 @@ def get_vertex_data_raw(start_frame, end_frame, vertices):
             v_pos = cmds.xform(v, query=True, worldSpace=True, translation=True)
 
             for pos in v_pos:
-                if pos > abs(larger_abs):
-                    larger_abs = pos
+                if abs(pos) > larger_abs:
+                    larger_abs = abs(pos)
 
             v_list.append(v_pos)
 

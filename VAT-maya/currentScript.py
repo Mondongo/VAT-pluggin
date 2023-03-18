@@ -1,8 +1,8 @@
-#======================================================================>
+# ======================================================================>
 import maya.cmds as cmds
 
 
-#global vars ----------->
+# global vars ----------->
 winName = "VATwindow"
 winTitle = "Vertex Animation Texture Generator (VAT)"
 winWidth = 280
@@ -10,44 +10,45 @@ start_frame_text = None
 end_frame_text = None
 
 
-#create window ----------->
+# create window ----------->
 def create_vat_window(*args):
     if cmds.window(winName, exists=True):
         cmds.deleteUI(winName)
- 
+
     cmds.window(winName, width=winWidth, title=winTitle)
     cmds.columnLayout()
-    cmds.text(winTitle, align="center", width=winWidth, height=50, font="boldLabelFont")
+    cmds.text(winTitle, align="center", width=winWidth,
+              height=50, font="boldLabelFont")
     cmds.text(" 1. first select the mesh that you want to generate VAT")
     cmds.text(" 2. select the timeline range you want to bake")
     cmds.text(" 3. hit bake VAT texture")
     cmds.separator(height=20)
     cw = winWidth/2
     global start_frame_text
-    start_frame_text = cmds.textFieldGrp(label='start frame:', columnWidth2=[cw,cw] ,columnAlign=[1,"center"])
+    start_frame_text = cmds.textFieldGrp(label='start frame:', columnWidth2=[
+                                         cw, cw], columnAlign=[1, "center"])
     global end_frame_text
-    end_frame_text = cmds.textFieldGrp(label='end frame:', columnWidth2=[cw,cw] ,columnAlign=[1,"center"])
+    end_frame_text = cmds.textFieldGrp(label='end frame:', columnWidth2=[
+                                       cw, cw], columnAlign=[1, "center"])
     cmds.separator(height=20)
-    cmds.button(label='Create VAT texture', command=create_vat_texture, width=winWidth, height=50)
+    cmds.button(label='Create VAT texture',
+                command=create_vat_texture, width=winWidth, height=50)
     cmds.showWindow()
 
 
-#main funct ----------->
+# main funct ----------->
 def create_vat_texture(*args):
     start_frame, end_frame = sanitize_frame_values()
     mesh = get_mesh()
     vertices = get_vertices(mesh)
-    vertex_data_raw, larger_abs = get_vertex_data_raw(start_frame, end_frame, vertices)
-    vertex_data = get_vertex_data(vertex_data_raw)
+    vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ = get_vertex_data_raw(start_frame, end_frame, vertices)
+    vertexDataNor = get_vertex_data_nor(vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ)
 
-    print(remap(30,0,30,0,1))
+    print(vertexDataNor)
 
-
-
-
+# misc functs ----------->
 
 
-#misc functs ----------->
 def sanitize_frame_values():
     sf_value = cmds.textFieldGrp(start_frame_text, query=True, text=True)
     ef_value = cmds.textFieldGrp(end_frame_text, query=True, text=True)
@@ -57,59 +58,113 @@ def sanitize_frame_values():
 
     start_frame = int(sf_value)
     end_frame = int(ef_value)
-    
+
     if end_frame < start_frame:
         raise Exception("start frame should be lower than end frame")
 
-    #total_frames = (end_frame - start_frame)+1
+    # total_frames = (end_frame - start_frame)+1
 
     return start_frame, end_frame
 
+
 def get_mesh():
-    sel = cmds.ls(sl=True,type='mesh',dag=True, long=True)
+    sel = cmds.ls(sl=True, type='mesh', dag=True, long=True)
     if sel:
         cmds.select(sel[0])
         return sel[0]
     else:
         cmds.select(clear=True)
         raise Exception(">> First select an object type 'mesh'")
- 
+
+
 def get_vertices(mesh):
-    return cmds.ls("%s.vtx[*]" % mesh, fl=True)    
+    return cmds.ls("%s.vtx[*]" % mesh, fl=True)
+
 
 def get_vertxPos(vertices):
     pos = []
     for vert in vertices:
-        pos.append(cmds.xform(vert, query=True, worldSpace=True, translation=True))
+        pos.append(cmds.xform(vert, query=True,
+                   worldSpace=True, translation=True))
     return pos
 
+
 def get_vertex_data_raw(start_frame, end_frame, vertices):
-    larger_abs = 0
-    f_list = []
+    minX = 0
+    maxX = 0
+    minY = 0
+    maxY = 0
+    minZ = 0
+    maxZ = 0
+    damp = 0
+    vertexDataRaw = []
 
     for f in range(start_frame, end_frame + 1):
         cmds.currentTime(f, edit=True)
-        v_list = []
+        vPosList = []
 
         for v in vertices:
-            v_pos = cmds.xform(v, query=True, worldSpace=True, translation=True)
+            vPos = cmds.xform(v, query=True, worldSpace=True, translation=True)
 
-            for pos in v_pos:
-                if pos > abs(larger_abs):
-                    larger_abs = pos
+            # min max X -------->
+            if vPos[0] < minX:
+                minX = vPos[0]
+            if vPos[0] > maxX:
+                maxX = vPos[0]
 
-            v_list.append(v_pos)
+            # min max Y -------->
+            if vPos[1] < minY:
+                minY = vPos[1]
+            if vPos[1] > maxY:
+                maxY = vPos[1]
 
-        f_list.append(v_list)
+            # min max Z -------->
+            if vPos[2] < minZ:
+                minZ = vPos[2]
+            if vPos[2] > maxZ:
+                maxZ = vPos[2]
 
-    return f_list, larger_abs
+            # add vector3 to vertex list -------->
+            vPosList.append(vPos)
 
-def get_vertex_data(vertex_data_raw):
-    return
+        vertexDataRaw.append(vPosList)
+
+    dampX = maxX - minX
+    dampY = maxY - minY
+    dampZ = maxZ - minZ
+
+    if damp < dampX:
+        damp = dampX
+    if damp < dampY:
+        damp = dampY
+    if damp < dampZ:
+        damp = dampZ
+
+    return vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ
+
+
+def get_vertex_data_nor(vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ):
+
+    vertexDataNor = []
+
+    for f in vertexDataRaw:
+
+        vPosNor = []
+
+        for vPos in f:
+            vPosNorX = remap(vPos[0], minX, maxX, 0, 1)
+            vPosNorY = remap(vPos[1], minY, maxY, 0, 1)
+            vPosNorZ = remap(vPos[2], minZ, maxZ, 0, 1)
+            vPosNor.append([vPosNorX, vPosNorY, vPosNorZ])
+
+        vertexDataNor.append(vPosNor)
+
+    return vertexDataNor
+
 
 def remap(num, old_min, old_max, new_min, new_max):
     return (((num - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
 
 
-#run the plugin ----------->
+# run the plugin ----------->
 create_vat_window()

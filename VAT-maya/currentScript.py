@@ -90,12 +90,13 @@ def get_vertxPos(vertices):
 
 
 def get_vertex_data_raw(start_frame, end_frame, vertices):
-    minX = 0
-    maxX = 0
-    minY = 0
-    maxY = 0
-    minZ = 0
-    maxZ = 0
+    firstVPos = cmds.xform(vertices[0], query=True, worldSpace=True, translation=True)
+    minX = firstVPos[0]
+    maxX = firstVPos[0]
+    minY = firstVPos[1]
+    maxY = firstVPos[1]
+    minZ = firstVPos[2]
+    maxZ = firstVPos[2]
     damp = 0
     vertexDataRaw = []
 
@@ -124,7 +125,7 @@ def get_vertex_data_raw(start_frame, end_frame, vertices):
             if vPos[2] > maxZ:
                 maxZ = vPos[2]
 
-            # add vector3 to vertex list -------->
+            # add vPos to vertex list -------->
             vPosList.append(vPos)
 
         vertexDataRaw.append(vPosList)
@@ -145,6 +146,31 @@ def get_vertex_data_raw(start_frame, end_frame, vertices):
 
 def get_vertex_data_nor(vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ):
 
+    print("minX => ", minX)
+    print("maxX => ", maxX)
+    print("minY => ", minY)
+    print("maxY => ", maxY)
+    print("minZ => ", minZ)
+    print("maxZ => ", maxZ)
+    print("damp => ", damp)
+    print()
+
+    norMinX = ((maxX - minX)*0.5) - (damp*0.5)
+    norMaxX = ((maxX - minX)*0.5) + (damp*0.5)
+    norMinY = ((maxY - minY)*0.5) - (damp*0.5)
+    norMaxY = ((maxY - minY)*0.5) + (damp*0.5)
+    norMinZ = ((maxZ - minZ)*0.5) - (damp*0.5)
+    norMaxZ = ((maxZ - minZ)*0.5) + (damp*0.5)
+
+    print("norMinX => ", norMinX)
+    print("norMaxX => ", norMaxX)
+    print("norMinY => ", norMinY)
+    print("norMaxY => ", norMaxY)
+    print("norMinZ => ", norMinZ)
+    print("norMaxZ => ", norMaxZ)
+    print()
+    
+
     vertexDataNor = []
 
     for f in vertexDataRaw:
@@ -152,9 +178,9 @@ def get_vertex_data_nor(vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ)
         vPosNor = []
 
         for vPos in f:
-            vPosNorX = remap(vPos[0], minX, maxX, 0, 1)
-            vPosNorY = remap(vPos[1], minY, maxY, 0, 1)
-            vPosNorZ = remap(vPos[2], minZ, maxZ, 0, 1)
+            vPosNorX = remap(vPos[0], norMinX, norMaxX, 0, 1)
+            vPosNorY = remap(vPos[1], norMinY, norMaxY, 0, 1)
+            vPosNorZ = remap(vPos[2], norMinZ, norMaxZ, 0, 1)
             vPosNor.append([vPosNorX, vPosNorY, vPosNorZ])
 
         vertexDataNor.append(vPosNor)

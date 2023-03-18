@@ -66,7 +66,6 @@ def sanitize_frame_values():
 
     return start_frame, end_frame
 
-
 def get_mesh():
     sel = cmds.ls(sl=True, type='mesh', dag=True, long=True)
     if sel:
@@ -76,10 +75,8 @@ def get_mesh():
         cmds.select(clear=True)
         raise Exception(">> First select an object type 'mesh'")
 
-
 def get_vertices(mesh):
     return cmds.ls("%s.vtx[*]" % mesh, fl=True)
-
 
 def get_vertxPos(vertices):
     pos = []
@@ -87,7 +84,6 @@ def get_vertxPos(vertices):
         pos.append(cmds.xform(vert, query=True,
                    worldSpace=True, translation=True))
     return pos
-
 
 def get_vertex_data_raw(start_frame, end_frame, vertices):
     firstVPos = cmds.xform(vertices[0], query=True, worldSpace=True, translation=True)
@@ -143,38 +139,18 @@ def get_vertex_data_raw(start_frame, end_frame, vertices):
 
     return vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ
 
-
 def get_vertex_data_nor(vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ):
 
-    print("minX => ", minX)
-    print("maxX => ", maxX)
-    print("minY => ", minY)
-    print("maxY => ", maxY)
-    print("minZ => ", minZ)
-    print("maxZ => ", maxZ)
-    print("damp => ", damp)
-    print()
-
-    norMinX = ((maxX - minX)*0.5) - (damp*0.5)
-    norMaxX = ((maxX - minX)*0.5) + (damp*0.5)
-    norMinY = ((maxY - minY)*0.5) - (damp*0.5)
-    norMaxY = ((maxY - minY)*0.5) + (damp*0.5)
-    norMinZ = ((maxZ - minZ)*0.5) - (damp*0.5)
-    norMaxZ = ((maxZ - minZ)*0.5) + (damp*0.5)
-
-    print("norMinX => ", norMinX)
-    print("norMaxX => ", norMaxX)
-    print("norMinY => ", norMinY)
-    print("norMaxY => ", norMaxY)
-    print("norMinZ => ", norMinZ)
-    print("norMaxZ => ", norMaxZ)
-    print()
-    
+    norMinX = (((maxX - minX)*0.5) + minX) - (damp*0.5)
+    norMaxX = (((maxX - minX)*0.5) + minX) + (damp*0.5)
+    norMinY = (((maxY - minY)*0.5) + minY) - (damp*0.5)
+    norMaxY = (((maxY - minY)*0.5) + minY) + (damp*0.5)
+    norMinZ = (((maxZ - minZ)*0.5) + minZ) - (damp*0.5)
+    norMaxZ = (((maxZ - minZ)*0.5) + minZ) + (damp*0.5)
 
     vertexDataNor = []
 
     for f in vertexDataRaw:
-
         vPosNor = []
 
         for vPos in f:
@@ -186,7 +162,6 @@ def get_vertex_data_nor(vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ)
         vertexDataNor.append(vPosNor)
 
     return vertexDataNor
-
 
 def remap(num, old_min, old_max, new_min, new_max):
     return (((num - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min

@@ -1,115 +1,43 @@
-#======================================================================>
-import maya.cmds as cmds
+import maya.OpenMaya as OpenMaya
+
+def main():
+    m_color = float4Torgba(1.0, 0.0, 0.0, 0.5)
+    generateTexture("c:/Users/rgugu/OneDrive/Desktop", "color01", m_color)
 
 
-#global vars ----------->
-winName = "VATwindow"
-winTitle = "Vertex Animation Texture Generator (VAT)"
-winWidth = 280
-start_frame_text = None
-end_frame_text = None
+def generateTexture(m_path, m_fileName, m_color):
+    try:
+        m_util = OpenMaya.MScriptUtil
+        m_height = 16
+        m_width = 16
+        m_depth = 4
+        m_image = OpenMaya.MImage()
+        m_image.create(m_height, m_width, m_depth )
+        m_pixels = m_image.pixels()
+        m_arrayLen = m_width * m_height * m_depth
 
+        for i in range(0, m_arrayLen, m_depth):
+            m_util.setUcharArray(m_pixels, i+0, m_color[0])   
+            m_util.setUcharArray(m_pixels, i+1, m_color[1])
+            m_util.setUcharArray(m_pixels, i+2, m_color[2])
+            m_util.setUcharArray(m_pixels, i+4, 1)
 
-#create window ----------->
-def create_vat_window(*args):
-    if cmds.window(winName, exists=True):
-        cmds.deleteUI(winName)
- 
-    cmds.window(winName, width=winWidth, title=winTitle)
-    cmds.columnLayout()
-    cmds.text(winTitle, align="center", width=winWidth, height=50, font="boldLabelFont")
-    cmds.text(" 1. first select the mesh that you want to generate VAT")
-    cmds.text(" 2. select the timeline range you want to bake")
-    cmds.text(" 3. hit bake VAT texture")
-    cmds.separator(height=20)
-    cw = winWidth/2
-    global start_frame_text
-    start_frame_text = cmds.textFieldGrp(label='start frame:', columnWidth2=[cw,cw] ,columnAlign=[1,"center"])
-    global end_frame_text
-    end_frame_text = cmds.textFieldGrp(label='end frame:', columnWidth2=[cw,cw] ,columnAlign=[1,"center"])
-    cmds.separator(height=20)
-    cmds.button(label='Create VAT texture', command=create_vat_texture, width=winWidth, height=50)
-    cmds.showWindow()
+        m_image.setPixels(m_pixels, m_height, m_width)
+        m_image.writeToFile( "{}/{}.png".format(m_path,m_fileName), '.png' )
 
-
-#main funct ----------->
-def create_vat_texture(*args):
-    start_frame, end_frame = sanitize_frame_values()
-    mesh = get_mesh()
-    vertices = get_vertices(mesh)
-    vertex_data_raw, larger_abs = get_vertex_data_raw(start_frame, end_frame, vertices)
-    vertex_data = get_vertex_data(vertex_data_raw)
-
-    print(larger_abs)
-
-
-
-
-
-
-#misc functs ----------->
-def sanitize_frame_values():
-    sf_value = cmds.textFieldGrp(start_frame_text, query=True, text=True)
-    ef_value = cmds.textFieldGrp(end_frame_text, query=True, text=True)
-
-    if sf_value == "" or ef_value == "":
-        raise Exception("start frame or end frame cant be empty")
-
-    start_frame = int(sf_value)
-    end_frame = int(ef_value)
-    
-    if end_frame < start_frame:
-        raise Exception("start frame should be lower than end frame")
-
-    #total_frames = (end_frame - start_frame)+1
-
-    return start_frame, end_frame
-
-def get_mesh():
-    sel = cmds.ls(sl=True,type='mesh',dag=True, long=True)
-    if sel:
-        cmds.select(sel[0])
-        return sel[0]
+    except:
+        OpenMaya.MGlobal.displayWarning("Can't save file to {}/{}.png".format(m_path,m_fileName))
+        return False
     else:
-        cmds.select(clear=True)
-        raise Exception(">> First select an object type 'mesh'")
- 
-def get_vertices(mesh):
-    return cmds.ls("%s.vtx[*]" % mesh, fl=True)    
+        return True
 
-def get_vertxPos(vertices):
-    pos = []
-    for vert in vertices:
-        pos.append(cmds.xform(vert, query=True, worldSpace=True, translation=True))
-    return pos
+      
 
-def get_vertex_data_raw(start_frame, end_frame, vertices):
-    larger_abs = 0
-    f_list = []
+def float4Torgba(m_r, m_g, m_b, m_a):
+    m_red   = int(m_r * 255.0)
+    m_green = int(m_g * 255.0)
+    m_blue  = int(m_b * 255.0)
+    m_alpha = int(m_a * 255.0)
+    return (m_red, m_green, m_blue, m_alpha)
 
-    for f in range(start_frame, end_frame + 1):
-        cmds.currentTime(f, edit=True)
-        v_list = []
-
-        for v in vertices:
-            v_pos = cmds.xform(v, query=True, worldSpace=True, translation=True)
-
-            for pos in v_pos:
-                if abs(pos) > larger_abs:
-                    larger_abs = abs(pos)
-
-            v_list.append(v_pos)
-
-        f_list.append(v_list)
-
-    return f_list, larger_abs
-
-def get_vertex_data(vertex_data_raw):
-    return
-
-def remap(num, old_min, old_max, new_min, new_max):
-    return (((num - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
-
-
-#run the plugin ----------->
-create_vat_window()
+main()

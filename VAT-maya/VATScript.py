@@ -1,7 +1,7 @@
 import maya.OpenMaya as OpenMaya
 
 def main():
-    m_color = float4Torgba(1.0, 0.0, 0.0, 0.5)
+    m_color = float4Torgba(1.0, 0.0, 0.0, 1.0)
     generateTexture("c:/Users/rgugu/OneDrive/Desktop", "color01", m_color)
 
 

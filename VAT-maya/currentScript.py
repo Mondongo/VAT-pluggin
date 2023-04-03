@@ -1,4 +1,5 @@
 # ======================================================================>
+import maya.OpenMaya as OpenMaya
 import maya.cmds as cmds
 
 
@@ -43,8 +44,8 @@ def create_vat_texture(*args):
     vertices = get_vertices(mesh)
     vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ = get_vertex_data_raw(start_frame, end_frame, vertices)
     vertexDataNor = get_vertex_data_nor(vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ)
-
-    print(vertexDataNor)
+    generatePosTexture(vertexDataNor)
+    
 
 # misc functs ----------->
 
@@ -140,7 +141,6 @@ def get_vertex_data_raw(start_frame, end_frame, vertices):
     return vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ
 
 def get_vertex_data_nor(vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ):
-
     norMinX = (((maxX - minX)*0.5) + minX) - (damp*0.5)
     norMaxX = (((maxX - minX)*0.5) + minX) + (damp*0.5)
     norMinY = (((maxY - minY)*0.5) + minY) - (damp*0.5)
@@ -165,6 +165,48 @@ def get_vertex_data_nor(vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ)
 
 def remap(num, old_min, old_max, new_min, new_max):
     return (((num - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
+
+def floatToColor(num):
+    col   = int(num * 255)
+    return (col)
+
+def generatePosTexture(vertexDataNor):
+    try:
+        m_util = OpenMaya.MScriptUtil
+        m_height = len(vertexDataNor)
+        m_width = len(vertexDataNor[0])
+        m_depth = 4
+        m_image = OpenMaya.MImage()
+        m_image.create(m_height, m_width, m_depth )
+        m_pixels = m_image.pixels()
+        m_arrayLen = m_width * m_height * m_depth
+        
+        index = 0
+        for frame in vertexDataNor:
+            for vertex in frame:
+
+                m_util.setUcharArray(m_pixels, index+0, floatToColor(vertex[0]))
+                m_util.setUcharArray(m_pixels, index+1, floatToColor(vertex[1]))
+                m_util.setUcharArray(m_pixels, index+2, floatToColor(vertex[2]))
+                m_util.setUcharArray(m_pixels, index+3, floatToColor(1))
+                index = index + 4
+
+        m_image.setPixels(m_pixels, m_width, m_height)
+        m_image.writeToFile('c:/Users/rgugu/OneDrive/Desktop/test-image.png', '.png')
+
+
+        print('total frames: ', len(vertexDataNor))
+        print('mesh vertices: ', len(vertexDataNor[0]))
+        print('deph (RGBA): 4')
+        print('total RGBA values: ',m_arrayLen)
+
+
+    except:
+        print('doesnt work')
+        return False
+    else:
+        return True
+
 
 
 # run the plugin ----------->

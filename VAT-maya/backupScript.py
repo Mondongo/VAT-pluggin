@@ -320,8 +320,6 @@ create_vat_window()
 
 
 
-
-
 # save an image ------------------------------------------------------->
 import maya.OpenMaya as OpenMaya
 

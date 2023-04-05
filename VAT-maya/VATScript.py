@@ -45,6 +45,9 @@ def create_vat_texture(*args):
     vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ = get_vertex_data_raw(start_frame, end_frame, vertices)
     vertexDataNor = get_vertex_data_nor(vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ)
     generatePosTexture(vertexDataNor)
+    gererate2UV(mesh)
+
+
     
 
 # misc functs ----------->
@@ -137,6 +140,14 @@ def get_vertex_data_raw(start_frame, end_frame, vertices):
         damp = dampY
     if damp < dampZ:
         damp = dampZ
+    
+    print('damp is: ', damp)
+    print('minX is: ', minX)
+    print('maxX is: ', maxX)
+    print('minY is: ', minY)
+    print('maxY is: ', maxY)
+    print('minZ is: ', minZ)
+    print('maxZ is: ', maxZ)
 
     return vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ
 
@@ -166,35 +177,40 @@ def get_vertex_data_nor(vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ)
 def remap(num, old_min, old_max, new_min, new_max):
     return (((num - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
 
-def float4Torgba(m_r, m_g, m_b, m_a):
-    m_red   = int(m_r * 255)
-    m_green = int(m_g * 255)
-    m_blue  = int(m_b * 255)
-    m_alpha  = int(m_a * 255)
-    return (m_red, m_green, m_blue, m_alpha)
+def floatToColor(num):
+    col   = int(num * 255)
+    return (col)
 
 def generatePosTexture(vertexDataNor):
-
     try:
         m_util = OpenMaya.MScriptUtil
-        m_height = 16
-        m_width = 16
+        m_height = len(vertexDataNor)
+        m_width = len(vertexDataNor[0])
         m_depth = 4
         m_image = OpenMaya.MImage()
         m_image.create(m_height, m_width, m_depth )
         m_pixels = m_image.pixels()
         m_arrayLen = m_width * m_height * m_depth
+        
+        index = 0
+        for frame in vertexDataNor:
+            for vertex in frame:
 
-        for i in range(0, m_arrayLen, m_depth):
-            m_color = float4Torgba(1, 0, 0, 1)
+                m_util.setUcharArray(m_pixels, index+0, floatToColor(vertex[0]))
+                m_util.setUcharArray(m_pixels, index+1, floatToColor(vertex[1]))
+                m_util.setUcharArray(m_pixels, index+2, floatToColor(vertex[2]))
+                m_util.setUcharArray(m_pixels, index+3, floatToColor(1))
+                index = index + 4
 
-            m_util.setUcharArray(m_pixels, i+0, m_color[0])   
-            m_util.setUcharArray(m_pixels, i+1, m_color[1])
-            m_util.setUcharArray(m_pixels, i+2, m_color[2])
-            m_util.setUcharArray(m_pixels, i+3, m_color[3])
-
-        m_image.setPixels(m_pixels, m_height, m_width)
+        m_image.setPixels(m_pixels, m_width, m_height)
         m_image.writeToFile('c:/Users/rgugu/OneDrive/Desktop/test-image.png', '.png')
+
+
+        print('total frames: ', len(vertexDataNor))
+        print('mesh vertices: ', len(vertexDataNor[0]))
+        print('deph (RGBA): 4')
+        print('total RGBA values: ',m_arrayLen)
+
 
     except:
         print('doesnt work')
@@ -202,7 +218,25 @@ def generatePosTexture(vertexDataNor):
     else:
         return True
 
+def gererate2UV(mesh):
+    cmds.polyUVSet(mesh, create=True, uvSet='vat')
+    cmds.polyUVSet(mesh, create=False, uvSet='vat', currentUVSet=True)
+    cmds.polyForceUV(uvSetName='vat', cp=True)
+    cmds.select(cmds.polyListComponentConversion(tv=True), r=True)
 
+    # Guarda los vértices seleccionados en una variable
+    meshVertices = cmds.ls(selection=True, flatten=True)
+
+    # modificar los uvs de los vertices selecionados
+    total_vertices = len(meshVertices)
+    damp = float(1/total_vertices)
+    u = damp*0.5
+    v = 0
+    for vertices in meshVertices:
+        cmds.polyEditUV(vertices, uvSetName='vat', relative=False, u=u, v=v, r=True)
+        u += damp
+
+    
 
 # run the plugin ----------->
 create_vat_window()

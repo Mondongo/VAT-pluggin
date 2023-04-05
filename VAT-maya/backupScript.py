@@ -362,3 +362,40 @@ def float4Torgba(m_r, m_g, m_b, m_a):
     return (m_red, m_green, m_blue, m_alpha)
 
 main()
+
+
+
+
+
+
+
+
+
+
+#------------------------------------------------------------------------------------>
+import maya.cmds as cmds
+
+#get selected mesh
+mesh = cmds.ls(selection=True)[0]
+
+#create new uv set
+cmds.polyUVSet(mesh, create=True, uvSet='vat')
+#cmds.polyUVSet(mesh, create=False, uvSet='vat', currentUVSet=True)
+
+#create uv camera projection
+cmds.polyForceUV(uvSetName='vat', cp=True)
+
+# Selecciona los vértices del mesh seleccionado
+cmds.select(cmds.polyListComponentConversion(tv=True), r=True)
+
+# Guarda los vértices seleccionados en una variable
+meshVertices = cmds.ls(selection=True, flatten=True)
+
+# modificar los uvs de los vertices selecionados
+total_vertices = len(meshVertices)
+damp = float(1/total_vertices)
+u = damp*0.5
+v = 0
+for vertices in meshVertices:
+    cmds.polyEditUV(vertices, uvSetName='vat', relative=False, u=u, v=v, r=True)
+    u += damp

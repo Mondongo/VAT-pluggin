@@ -45,6 +45,9 @@ def create_vat_texture(*args):
     vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ = get_vertex_data_raw(start_frame, end_frame, vertices)
     vertexDataNor = get_vertex_data_nor(vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ)
     generatePosTexture(vertexDataNor)
+    gererate2UV(mesh)
+
+
     
 
 # misc functs ----------->
@@ -137,6 +140,14 @@ def get_vertex_data_raw(start_frame, end_frame, vertices):
         damp = dampY
     if damp < dampZ:
         damp = dampZ
+    
+    print('damp is: ', damp)
+    print('minX is: ', minX)
+    print('maxX is: ', maxX)
+    print('minY is: ', minY)
+    print('maxY is: ', maxY)
+    print('minZ is: ', minZ)
+    print('maxZ is: ', maxZ)
 
     return vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ
 
@@ -207,7 +218,25 @@ def generatePosTexture(vertexDataNor):
     else:
         return True
 
+def gererate2UV(mesh):
+    cmds.polyUVSet(mesh, create=True, uvSet='vat')
+    cmds.polyUVSet(mesh, create=False, uvSet='vat', currentUVSet=True)
+    cmds.polyForceUV(uvSetName='vat', cp=True)
+    cmds.select(cmds.polyListComponentConversion(tv=True), r=True)
 
+    # Guarda los vértices seleccionados en una variable
+    meshVertices = cmds.ls(selection=True, flatten=True)
+
+    # modificar los uvs de los vertices selecionados
+    total_vertices = len(meshVertices)
+    damp = float(1/total_vertices)
+    u = damp*0.5
+    v = 0
+    for vertices in meshVertices:
+        cmds.polyEditUV(vertices, uvSetName='vat', relative=False, u=u, v=v, r=True)
+        u += damp
+
+    
 
 # run the plugin ----------->
 create_vat_window()

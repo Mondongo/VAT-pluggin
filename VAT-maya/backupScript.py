@@ -399,3 +399,29 @@ v = 0
 for vertices in meshVertices:
     cmds.polyEditUV(vertices, uvSetName='vat', relative=False, u=u, v=v, r=True)
     u += damp
+
+
+
+
+
+#------------------------------------------------------------------------------->
+import maya.cmds as cmds
+
+mesh = cmds.ls(sl=True, type='mesh', dag=True, long=True)[0]
+#vertices = cmds.polyListComponentConversion(mesh, toVertex=True)
+vertices = cmds.ls("%s.vtx[*]" % mesh, fl=True)
+
+for vertex in vertices:
+    print('vertex name: ', vertex)
+    vertexNormals = cmds.polyNormalPerVertex(vertex, query=True, xyz=True)
+    for index, vertexN in enumerate(vertexNormals):
+        print('    vertex normal: ',index, ' > ', vertexN)
+
+
+
+
+
+#------------------------------------------------------------------------------->
+import maya.cmds as cmds
+
+cmds.polySoftEdge( a=180 )

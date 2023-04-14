@@ -235,7 +235,7 @@ def gererate2UV(mesh):
     for vertices in meshVertices:
         cmds.polyEditUV(vertices, uvSetName='vat', relative=False, u=u, v=v, r=True)
         u += damp
-
+    cmds.select(mesh)
     
 
 # run the plugin ----------->

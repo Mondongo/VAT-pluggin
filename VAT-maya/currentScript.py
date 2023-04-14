@@ -46,6 +46,7 @@ def create_vat_texture(*args):
     vertexDataNor = get_vertex_data_nor(vertexDataRaw, damp, minX, maxX, minY, maxY, minZ, maxZ)
     generatePosTexture(vertexDataNor)
     gererate2UV(mesh)
+    softenEdges(mesh)
 
 
     
@@ -235,8 +236,11 @@ def gererate2UV(mesh):
     for vertices in meshVertices:
         cmds.polyEditUV(vertices, uvSetName='vat', relative=False, u=u, v=v, r=True)
         u += damp
-
+    cmds.select(mesh)
     
+def softenEdges(mesh):
+    print('softening edges')
+    cmds.polySoftEdge( a=180 )
 
 # run the plugin ----------->
 create_vat_window()

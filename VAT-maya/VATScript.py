@@ -7,6 +7,7 @@ import maya.cmds as cmds
 win_Name = "VATwindow"
 win_Title = "Vertex Animation Texture Generator (VAT)"
 win_Width = 300
+export_location = ''
 
 
 # create window ----------->
@@ -36,7 +37,7 @@ def create_vat_window(*args):
     cmds.separator(height=20)
 
     cmds.rowLayout(numberOfColumns=2, adjustableColumn=2)
-    cmds.button(label='Select export folder',command=get_folder_name)
+    cmds.button(label='Select export folder',command=get_export_location)
     cmds.text('location_label', label='')
     cmds.setParent(master_layout)
     cmds.separator(height=20)
@@ -44,37 +45,55 @@ def create_vat_window(*args):
     cmds.button(label='Create VAT texture',command=create_vat_texture, width=win_Width, height=50)
     cmds.separator(height=20)
 
-
     cmds.showWindow()
 
 
-
-def get_folder_name(*args):
-    global export_location
-    export_location = cmds.fileDialog2('export_location', dialogStyle=2, fileMode=3)[0]
-    if export_location:
-        cmds.text('location_label', edit=True, label=export_location)
-
-
-
-
-
-
-
-
 # main funct ----------->
+def get_export_location(*args):
+    global export_location
+    export_location = ''
+    try:
+        export_location = cmds.fileDialog2(dialogStyle=2, fileMode=3)[0]
+    except:
+        pass
+    cmds.text('location_label', edit=True, label=export_location)
+
+
 def create_vat_texture(*args):
 
-    uv_checkbox = cmds.checkBox('uv_checkbox', q=True, value=True)
-    normal_checkbox = cmds.checkBox('normal_checkbox', q=True, value=True)
-    s_frame_input = cmds.textFieldGrp('s_frame_input', q=True, text=True)
-    e_frame_input = cmds.textFieldGrp('e_frame_input', q=True, text=True)
+    # get input values --------------------->
+    # uv_checkbox = cmds.checkBox('uv_checkbox', q=True, value=True)
+    # normal_checkbox = cmds.checkBox('normal_checkbox', q=True, value=True)
+    # s_frame_input = cmds.textFieldGrp('s_frame_input', q=True, text=True)
+    # e_frame_input = cmds.textFieldGrp('e_frame_input', q=True, text=True)
 
     print(export_location)
-    print(uv_checkbox)
-    print(normal_checkbox)
-    print(s_frame_input)
-    print(e_frame_input)
+
+    try:
+        m_util = OpenMaya.MScriptUtil
+        m_height = 10
+        m_width = 10
+        m_depth = 4
+        m_image = OpenMaya.MImage()
+        m_image.create(m_height, m_width, m_depth )
+        m_pixels = m_image.pixels()
+        m_arrayLen = m_width * m_height * m_depth
+
+        for pixel in range(0, m_arrayLen, m_depth):
+            #set RGBA
+            m_util.setUcharArray(m_pixels, pixel+0, 255)   
+            m_util.setUcharArray(m_pixels, pixel+1, 0)
+            m_util.setUcharArray(m_pixels, pixel+2, 0)
+            m_util.setUcharArray(m_pixels, pixel+3, 255)
+
+        m_image.setPixels(m_pixels, m_width, m_height)
+        m_image.writeToFile('{}/test-image.png'.format(export_location), '.png')
+
+    except:
+        print('doesnt work')
+        return False
+    else:
+        return True
 
 
 

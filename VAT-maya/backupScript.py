@@ -601,8 +601,7 @@ def get_vertices(mesh):
 def get_vertxPos(vertices):
     pos = []
     for vert in vertices:
-        pos.append(cmds.xform(vert, query=True,
-                   worldSpace=True, translation=True))
+        pos.append(cmds.xform(vert, query=True,worldSpace=True, translation=True))
     return pos
 
 def get_vertex_data_raw(start_frame, end_frame, vertices):

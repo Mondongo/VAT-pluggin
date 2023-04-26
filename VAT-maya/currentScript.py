@@ -49,6 +49,13 @@ def create_vat_window(*args):
 
 
 #misc functs ----------->
+def remap(num, old_min, old_max, new_min, new_max):
+    return (((num - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
+
+def floatToColor(num):
+    col   = int(num * 255)
+    return (col)
+
 def get_export_location(*args):
     print('- get export location')
     global export_location
@@ -90,24 +97,25 @@ def get_vertices(mesh):
     return cmds.ls("%s.vtx[*]" % mesh, fl=True)
 
 def get_data(start_frame, end_frame, vertices):
+    print('- get vetex position and normal data')
     
+    #get first vertex reference pos ---------------->
     firstVPos = cmds.xform(vertices[0], query=True, worldSpace=True, translation=True)
     minX = maxX = firstVPos[0]
     minY = maxY = firstVPos[1]
     minZ = maxZ = firstVPos[2]
-    damp = 0
 
-    framesPos = []
-    framesNor = []
+    vertexPos = []
+    vertexNor = []
     for f in range(start_frame, end_frame + 1):
         cmds.currentTime(f, edit=True)
 
-        vertexPos = []
-        vertexNor = []
+        vPos = []
+        vNor = []
         for v in vertices:
             #get raw vertex pos ---------------->
             pos = cmds.xform(v, query=True, worldSpace=True, translation=True)
-            vertexPos.append(pos)
+            vPos.append(pos)
 
             # min max X -------->
             if pos[0] < minX:
@@ -129,62 +137,126 @@ def get_data(start_frame, end_frame, vertices):
 
             #get smooth vertex normal ---------------->
             normals = cmds.polyNormalPerVertex(v, query=True, xyz=True)
-            nX = 0
-            nY = 0
-            nZ = 0
+            nX = nY =nZ = 0
             for n in range(0, len(normals), 3):
                 nX += normals[n+0]
                 nY += normals[n+1]
                 nZ += normals[n+2]
-            nX = nX/(len(normals)/3)
-            nY = nY/(len(normals)/3)
-            nZ = nZ/(len(normals)/3)
-            vertexNor.append([nX,nY,nZ])
+            totalNormals = len(normals) / 3
+            nX = nX / totalNormals
+            nY = nY / totalNormals
+            nZ = nZ / totalNormals
+            vNor.append([nX, nY, nZ])
 
         #append data to main ---------------->
-        framesPos.append(vertexPos)
-        framesNor.append(vertexNor)
+        vertexPos.append(vPos)
+        vertexNor.append(vNor)
     
-    #calculate damp ----------->
-    dampX = maxX - minX
-    dampY = maxY - minY
-    dampZ = maxZ - minZ
-    if damp < dampX:
-        damp = dampX
-    if damp < dampY:
-        damp = dampY
-    if damp < dampZ:
-        damp = dampZ
-    
+    #normalize frames position base on range ---------------->
+    for f in vertexPos:
+        for v in f:
+            v[0] = remap(v[0], minX, maxX, 0, 1)
+            v[1] = remap(v[1], minY, maxY, 0, 1)
+            v[2] = remap(v[2], minZ, maxZ, 0, 1)
 
-    print('framesPos > ', framesPos)
-    print('framesNor > ', framesNor)
-    print('minX > ', minX)
-    print('maxX > ', maxX)
-    print('minY > ', minY)
-    print('maxY > ', maxY)
-    print('minZ > ', minZ)
-    print('maxZ > ', maxZ)
-    print('damp > ', damp)
+    return vertexPos, vertexNor, minX, maxX, minY, maxY, minZ, maxZ
 
+def gen_Pos_Texture(vertexPos):
+    print('- attempt to create vertex position texture')
+    try:
+        m_util = OpenMaya.MScriptUtil
+        m_height = len(vertexPos)
+        m_width = len(vertexPos[0])
+        m_depth = 4
+        m_image = OpenMaya.MImage()
+        m_image.create(m_height, m_width, m_depth )
+        m_pixels = m_image.pixels()
+        m_arrayLen = m_width * m_height * m_depth
+        
+        index = 0
+        for frame in vertexPos:
+            for vertex in frame:
 
+                m_util.setUcharArray(m_pixels, index+0, floatToColor(vertex[0]))
+                m_util.setUcharArray(m_pixels, index+1, floatToColor(vertex[1]))
+                m_util.setUcharArray(m_pixels, index+2, floatToColor(vertex[2]))
+                m_util.setUcharArray(m_pixels, index+3, floatToColor(1))
+                index = index + 4
 
-    return vertexPos, vertexNor, damp, minX, maxX, minY, maxY, minZ, maxZ
+        m_image.setPixels(m_pixels, m_width, m_height)
+        m_image.writeToFile('{}/vert_pos_texture.png'.format(export_location), '.png')
 
+    except:
+        print('gen_Pos_Texture doesnt work')
+        return False
+    else:
+        return True
 
+def gen_Nor_Texture(vertexNor):
+    print('- attempt to create vertex normal texture')
+    try:
+        m_util = OpenMaya.MScriptUtil
+        m_height = len(vertexNor)
+        m_width = len(vertexNor[0])
+        m_depth = 4
+        m_image = OpenMaya.MImage()
+        m_image.create(m_height, m_width, m_depth )
+        m_pixels = m_image.pixels()
+        m_arrayLen = m_width * m_height * m_depth
+        
+        index = 0
+        for frame in vertexNor:
+            for vertex in frame:
+
+                m_util.setUcharArray(m_pixels, index+0, floatToColor(vertex[0]))
+                m_util.setUcharArray(m_pixels, index+1, floatToColor(vertex[1]))
+                m_util.setUcharArray(m_pixels, index+2, floatToColor(vertex[2]))
+                m_util.setUcharArray(m_pixels, index+3, floatToColor(1))
+                index = index + 4
+
+        m_image.setPixels(m_pixels, m_width, m_height)
+        m_image.writeToFile('{}/vert_nor_texture.png'.format(export_location), '.png')
+
+    except:
+        print('gen_Pos_Texture doesnt work')
+        return False
+    else:
+        return True
+
+def gererate2UV(mesh):
+    cmds.polyUVSet(mesh, create=True, uvSet='vat')
+    cmds.polyUVSet(mesh, create=False, uvSet='vat', currentUVSet=True)
+    cmds.polyForceUV(uvSetName='vat', cp=True)
+    cmds.select(cmds.polyListComponentConversion(tv=True), r=True)
+
+    # Guarda los vértices seleccionados en una variable
+    meshVertices = cmds.ls(selection=True, flatten=True)
+
+    # modificar los uvs de los vertices selecionados
+    total_vertices = len(meshVertices)
+    damp = float(1/total_vertices)
+    u = damp*0.5
+    v = 0
+    for vertices in meshVertices:
+        cmds.polyEditUV(vertices, uvSetName='vat', relative=False, u=u, v=v, r=True)
+        u += damp
+    cmds.select(mesh)
+ 
 
 
 
 #create_vat_texturc ----------->
 def create_vat_texture(*args):
     print('- attempt to create VAT')
-    
     uv_checkbox, normal_checkbox, start_frame, end_frame = get_input_data()
     mesh = get_mesh()
     vertices = get_vertices(mesh)
-    vPos, vNor, damp, minX, maxX, minY, maxY, minZ, maxZ = get_data(start_frame, end_frame, vertices)
-
-
+    vertexPos, vertexNor, minX, maxX, minY, maxY, minZ, maxZ = get_data(start_frame, end_frame, vertices)
+    gen_Pos_Texture(vertexPos)
+    if cmds.checkBox('normal_checkbox', q=True, value=True):
+        gen_Nor_Texture(vertexNor)
+    if cmds.checkBox('uv_checkbox', q=True, value=True):
+        gererate2UV(mesh)
 
 
 

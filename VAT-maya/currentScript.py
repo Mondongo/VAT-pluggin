@@ -10,7 +10,7 @@ win_Width = 300
 export_location = 'C:/Users/rgugu/OneDrive/Desktop'
 
 
-#create window ----------->
+#functs ----------->
 def create_vat_window(*args):
     if cmds.window(win_Name, exists=True):
         cmds.deleteUI(win_Name)
@@ -47,8 +47,6 @@ def create_vat_window(*args):
 
     cmds.showWindow()
 
-
-#misc functs ----------->
 def remap(num, old_min, old_max, new_min, new_max):
     return (((num - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
 
@@ -241,11 +239,7 @@ def gererate2UV(mesh):
         cmds.polyEditUV(vertices, uvSetName='vat', relative=False, u=u, v=v, r=True)
         u += damp
     cmds.select(mesh)
- 
 
-
-
-#create_vat_texturc ----------->
 def create_vat_texture(*args):
     print('- attempt to create VAT')
     uv_checkbox, normal_checkbox, start_frame, end_frame = get_input_data()
@@ -257,8 +251,6 @@ def create_vat_texture(*args):
         gen_Nor_Texture(vertexNor)
     if cmds.checkBox('uv_checkbox', q=True, value=True):
         gererate2UV(mesh)
-
-
 
 
 # run the plugin ----------->

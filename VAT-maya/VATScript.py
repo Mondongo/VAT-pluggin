@@ -10,7 +10,7 @@ win_Width = 300
 export_location = 'C:/Users/rgugu/OneDrive/Desktop'
 
 
-#create window ----------->
+#functs ----------->
 def create_vat_window(*args):
     if cmds.window(win_Name, exists=True):
         cmds.deleteUI(win_Name)
@@ -45,10 +45,10 @@ def create_vat_window(*args):
     cmds.button(label='Create VAT texture',command=create_vat_texture, width=win_Width, height=50)
     cmds.separator(height=20)
 
+    cmds.scrollField('info_text_input', editable=False, wordWrap=True, height=100, text='' )
+
     cmds.showWindow()
 
-
-#misc functs ----------->
 def remap(num, old_min, old_max, new_min, new_max):
     return (((num - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
 
@@ -105,17 +105,17 @@ def get_data(start_frame, end_frame, vertices):
     minY = maxY = firstVPos[1]
     minZ = maxZ = firstVPos[2]
 
-    framesPos = []
-    framesNor = []
+    vertexPos = []
+    vertexNor = []
     for f in range(start_frame, end_frame + 1):
         cmds.currentTime(f, edit=True)
 
-        vertexPos = []
-        vertexNor = []
+        vPos = []
+        vNor = []
         for v in vertices:
             #get raw vertex pos ---------------->
             pos = cmds.xform(v, query=True, worldSpace=True, translation=True)
-            vertexPos.append(pos)
+            vPos.append(pos)
 
             # min max X -------->
             if pos[0] < minX:
@@ -137,23 +137,23 @@ def get_data(start_frame, end_frame, vertices):
 
             #get smooth vertex normal ---------------->
             normals = cmds.polyNormalPerVertex(v, query=True, xyz=True)
-            nX = nY =nZ = 0
+            nX = nY = nZ = 0
             for n in range(0, len(normals), 3):
                 nX += normals[n+0]
                 nY += normals[n+1]
                 nZ += normals[n+2]
             totalNormals = len(normals) / 3
-            nX = nX / totalNormals
-            nY = nY / totalNormals
-            nZ = nZ / totalNormals
-            vertexNor.append([nX, nY, nZ])
+            nX = remap((nX / totalNormals), -1, 1, 0, 1)
+            nY = remap((nY / totalNormals), -1, 1, 0, 1)
+            nZ = remap((nZ / totalNormals), -1, 1, 0, 1)
+            vNor.append([nX, nY, nZ])
 
         #append data to main ---------------->
-        framesPos.append(vertexPos)
-        framesNor.append(vertexNor)
+        vertexPos.append(vPos)
+        vertexNor.append(vNor)
     
     #normalize frames position base on range ---------------->
-    for f in framesPos:
+    for f in vertexPos:
         for v in f:
             v[0] = remap(v[0], minX, maxX, 0, 1)
             v[1] = remap(v[1], minY, maxY, 0, 1)
@@ -161,13 +161,12 @@ def get_data(start_frame, end_frame, vertices):
 
     return vertexPos, vertexNor, minX, maxX, minY, maxY, minZ, maxZ
 
-
-
-def generatePosTexture(vertexDataNor):
+def gen_Pos_Texture(vertexPos):
+    print('- attempt to create vertex position texture')
     try:
         m_util = OpenMaya.MScriptUtil
-        m_height = len(vertexDataNor)
-        m_width = len(vertexDataNor[0])
+        m_height = len(vertexPos)
+        m_width = len(vertexPos[0])
         m_depth = 4
         m_image = OpenMaya.MImage()
         m_image.create(m_height, m_width, m_depth )
@@ -175,7 +174,7 @@ def generatePosTexture(vertexDataNor):
         m_arrayLen = m_width * m_height * m_depth
         
         index = 0
-        for frame in vertexDataNor:
+        for frame in vertexPos:
             for vertex in frame:
 
                 m_util.setUcharArray(m_pixels, index+0, floatToColor(vertex[0]))
@@ -185,46 +184,87 @@ def generatePosTexture(vertexDataNor):
                 index = index + 4
 
         m_image.setPixels(m_pixels, m_width, m_height)
-        m_image.writeToFile('c:/Users/rgugu/OneDrive/Desktop/test-image.png', '.png')
-
-
-        print('total frames: ', len(vertexDataNor))
-        print('mesh vertices: ', len(vertexDataNor[0]))
-        print('deph (RGBA): 4')
-        print('total RGBA values: ',m_arrayLen)
-
+        m_image.writeToFile('{}/vert_pos_texture.png'.format(export_location), '.png')
 
     except:
-        print('doesnt work')
+        print('gen_Pos_Texture doesnt work')
         return False
     else:
         return True
 
+def gen_Nor_Texture(vertexNor):
+    print('- attempt to create vertex normal texture')
+    try:
+        m_util = OpenMaya.MScriptUtil
+        m_height = len(vertexNor)
+        m_width = len(vertexNor[0])
+        m_depth = 4
+        m_image = OpenMaya.MImage()
+        m_image.create(m_height, m_width, m_depth )
+        m_pixels = m_image.pixels()
+        m_arrayLen = m_width * m_height * m_depth
+        
+        index = 0
+        for frame in vertexNor:
+            for vertex in frame:
 
+                m_util.setUcharArray(m_pixels, index+0, floatToColor(vertex[0]))
+                m_util.setUcharArray(m_pixels, index+1, floatToColor(vertex[1]))
+                m_util.setUcharArray(m_pixels, index+2, floatToColor(vertex[2]))
+                m_util.setUcharArray(m_pixels, index+3, floatToColor(1))
+                index = index + 4
 
+        m_image.setPixels(m_pixels, m_width, m_height)
+        m_image.writeToFile('{}/vert_nor_texture.png'.format(export_location), '.png')
 
+    except:
+        print('gen_Pos_Texture doesnt work')
+        return False
+    else:
+        return True
 
+def gererate2UV(mesh):
+    cmds.polyUVSet(mesh, create=True, uvSet='vat')
+    cmds.polyUVSet(mesh, create=False, uvSet='vat', currentUVSet=True)
+    cmds.polyForceUV(uvSetName='vat', cp=True)
+    cmds.select(cmds.polyListComponentConversion(tv=True), r=True)
 
+    # Guarda los vértices seleccionados en una variable
+    meshVertices = cmds.ls(selection=True, flatten=True)
 
+    # modificar los uvs de los vertices selecionados
+    total_vertices = len(meshVertices)
+    damp = float(1/total_vertices)
+    u = damp*0.5
+    v = 0
+    for vertices in meshVertices:
+        cmds.polyEditUV(vertices, uvSetName='vat', relative=False, u=u, v=v, r=True)
+        u += damp
+    cmds.select(mesh)
 
+def print_Info(minX, maxX, minY, maxY, minZ, maxZ):
+    print('- printing info text')
+    info_text = f'''min X -> {round(minX, 6)}
+max X -> {round(maxX, 6)}
+min Y -> {round(minY, 6)}
+max Y -> {round(maxY, 6)}
+min Z -> {round(minZ, 6)}
+max Z -> {round(maxZ, 6)}'''
+    cmds.scrollField('info_text_input', edit=True, text=info_text)
 
-
-
-
-
-#create_vat_texturc ----------->
 def create_vat_texture(*args):
     print('- attempt to create VAT')
     uv_checkbox, normal_checkbox, start_frame, end_frame = get_input_data()
     mesh = get_mesh()
     vertices = get_vertices(mesh)
     vertexPos, vertexNor, minX, maxX, minY, maxY, minZ, maxZ = get_data(start_frame, end_frame, vertices)
-    generatePosTexture(vertexPos)
-
-
-
-
-
+    gen_Pos_Texture(vertexPos)
+    if cmds.checkBox('normal_checkbox', q=True, value=True):
+        gen_Nor_Texture(vertexNor)
+    if cmds.checkBox('uv_checkbox', q=True, value=True):
+        gererate2UV(mesh)
+    print_Info(minX, maxX, minY, maxY, minZ, maxZ)
+    
 
 # run the plugin ----------->
 create_vat_window()

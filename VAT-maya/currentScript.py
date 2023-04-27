@@ -45,6 +45,8 @@ def create_vat_window(*args):
     cmds.button(label='Create VAT texture',command=create_vat_texture, width=win_Width, height=50)
     cmds.separator(height=20)
 
+    cmds.scrollField('info_text_input', editable=False, wordWrap=True, height=100, text='' )
+
     cmds.showWindow()
 
 def remap(num, old_min, old_max, new_min, new_max):
@@ -135,15 +137,15 @@ def get_data(start_frame, end_frame, vertices):
 
             #get smooth vertex normal ---------------->
             normals = cmds.polyNormalPerVertex(v, query=True, xyz=True)
-            nX = nY =nZ = 0
+            nX = nY = nZ = 0
             for n in range(0, len(normals), 3):
                 nX += normals[n+0]
                 nY += normals[n+1]
                 nZ += normals[n+2]
             totalNormals = len(normals) / 3
-            nX = nX / totalNormals
-            nY = nY / totalNormals
-            nZ = nZ / totalNormals
+            nX = remap((nX / totalNormals), -1, 1, 0, 1)
+            nY = remap((nY / totalNormals), -1, 1, 0, 1)
+            nZ = remap((nZ / totalNormals), -1, 1, 0, 1)
             vNor.append([nX, nY, nZ])
 
         #append data to main ---------------->
@@ -240,6 +242,16 @@ def gererate2UV(mesh):
         u += damp
     cmds.select(mesh)
 
+def print_Info(minX, maxX, minY, maxY, minZ, maxZ):
+    print('- printing info text')
+    info_text = f'''min X -> {round(minX, 6)}
+max X -> {round(maxX, 6)}
+min Y -> {round(minY, 6)}
+max Y -> {round(maxY, 6)}
+min Z -> {round(minZ, 6)}
+max Z -> {round(maxZ, 6)}'''
+    cmds.scrollField('info_text_input', edit=True, text=info_text)
+
 def create_vat_texture(*args):
     print('- attempt to create VAT')
     uv_checkbox, normal_checkbox, start_frame, end_frame = get_input_data()
@@ -251,7 +263,8 @@ def create_vat_texture(*args):
         gen_Nor_Texture(vertexNor)
     if cmds.checkBox('uv_checkbox', q=True, value=True):
         gererate2UV(mesh)
-
+    print_Info(minX, maxX, minY, maxY, minZ, maxZ)
+    
 
 # run the plugin ----------->
 create_vat_window()

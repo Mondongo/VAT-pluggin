@@ -52,11 +52,10 @@ def create_vat_window(*args):
     cmds.showWindow()
 
 def remap(num, old_min, old_max, new_min, new_max):
-    return (num - old_min) * (new_max - new_min) / (old_max - old_min) + new_min
-
-
-
-
+    if old_min == old_max:
+        return 0.5
+    else:
+        return (num - old_min) * (new_max - new_min) / (old_max - old_min) + new_min
 
 def floatToColor(num):
     col   = int(num * 255)

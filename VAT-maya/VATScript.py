@@ -24,8 +24,7 @@ def create_vat_window(*args):
     cmds.text("3. hit bake VAT texture",align="left")
     cmds.separator(height=20)
     
-    cmds.checkBox('uv_checkbox',label='Generate new UVSet and apply VAT UV map', value=True)
-    cmds.checkBox('normal_checkbox',label='Generate Vertex normal Texture', value=True)
+    cmds.checkBox('normal_checkbox',label='Generate also Vertex normal Texture', value=True)
     cmds.separator(height=20)
 
     cmds.text("Select frame range for the animation texture",align="left", height=30)
@@ -42,7 +41,10 @@ def create_vat_window(*args):
     cmds.setParent(master_layout)
     cmds.separator(height=20)
 
-    cmds.button(label='Create VAT texture',command=create_vat_texture, width=win_Width, height=50)
+    cmds.rowLayout(numberOfColumns=2, adjustableColumn=2)
+    cmds.button(label='  Create VAT UVs  ',command=create_vat_uvs, height=50)
+    cmds.button(label='Create VAT texture',command=create_vat_texture, height=50)
+    cmds.setParent(master_layout)
     cmds.separator(height=20)
 
     cmds.scrollField('info_text_input', editable=False, wordWrap=True, height=100, text='' )
@@ -50,7 +52,11 @@ def create_vat_window(*args):
     cmds.showWindow()
 
 def remap(num, old_min, old_max, new_min, new_max):
-    return (((num - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
+    return (num - old_min) * (new_max - new_min) / (old_max - old_min) + new_min
+
+
+
+
 
 def floatToColor(num):
     col   = int(num * 255)
@@ -68,7 +74,6 @@ def get_export_location(*args):
 
 def get_input_data():
     print('- getting input data')
-    uv_checkbox = cmds.checkBox('uv_checkbox', q=True, value=True)
     normal_checkbox = cmds.checkBox('normal_checkbox', q=True, value=True)
     try:
         start_frame = int(cmds.textFieldGrp('s_frame_input', q=True, text=True))
@@ -80,7 +85,7 @@ def get_input_data():
     
     if export_location == '':
         raise Exception('export folder path cant be empty')
-    return uv_checkbox, normal_checkbox, start_frame, end_frame
+    return normal_checkbox, start_frame, end_frame
 
 def get_mesh():
     print('- get mesh')
@@ -242,29 +247,33 @@ def gererate2UV(mesh):
         u += damp
     cmds.select(mesh)
 
-def print_Info(minX, maxX, minY, maxY, minZ, maxZ):
-    print('- printing info text')
+def log_Info(info_text):
+    print('- log text')
+    cmds.scrollField('info_text_input', edit=True, text=info_text)
+
+def create_vat_uvs(*args):
+    print('- create VAT UVs')
+    mesh = get_mesh()
+    gererate2UV(mesh)
+    log_Info('VAT UVs created on second UVSet')
+
+def create_vat_texture(*args):
+    print('- attempt to create VAT')
+    normal_checkbox, start_frame, end_frame = get_input_data()
+    mesh = get_mesh()
+    vertices = get_vertices(mesh)
+    vertexPos, vertexNor, minX, maxX, minY, maxY, minZ, maxZ = get_data(start_frame, end_frame, vertices)
+    gen_Pos_Texture(vertexPos)
+    if normal_checkbox:
+        gen_Nor_Texture(vertexNor)
     info_text = f'''min X -> {round(minX, 6)}
 max X -> {round(maxX, 6)}
 min Y -> {round(minY, 6)}
 max Y -> {round(maxY, 6)}
 min Z -> {round(minZ, 6)}
 max Z -> {round(maxZ, 6)}'''
-    cmds.scrollField('info_text_input', edit=True, text=info_text)
+    log_Info(info_text)
 
-def create_vat_texture(*args):
-    print('- attempt to create VAT')
-    uv_checkbox, normal_checkbox, start_frame, end_frame = get_input_data()
-    mesh = get_mesh()
-    vertices = get_vertices(mesh)
-    vertexPos, vertexNor, minX, maxX, minY, maxY, minZ, maxZ = get_data(start_frame, end_frame, vertices)
-    gen_Pos_Texture(vertexPos)
-    if cmds.checkBox('normal_checkbox', q=True, value=True):
-        gen_Nor_Texture(vertexNor)
-    if cmds.checkBox('uv_checkbox', q=True, value=True):
-        gererate2UV(mesh)
-    print_Info(minX, maxX, minY, maxY, minZ, maxZ)
-    
 
 # run the plugin ----------->
 create_vat_window()

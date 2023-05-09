@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<Autodesk_Cache_File>
+  <cacheType Type="OneFile" Format="mcx"/>
+  <time Range="250-25000"/>
+  <cacheTimePerFrame TimePerFrame="250"/>
+  <cacheVersion Version="2.0"/>
+  <extra>C:/Users/rgugu/Repo-Proyects/VAT-pluggin/maya/vat scene.mb</extra>
+  <extra>maya 2023</extra>
+  <extra>rgugu</extra>
+  <Channels>
+    <channel0 ChannelName="wheelShape" ChannelType="FloatVectorArray" ChannelInterpretation="positions" SamplingType="Regular" SamplingRate="250" StartTime="250" EndTime="25000"/>
+  </Channels>
+</Autodesk_Cache_File>

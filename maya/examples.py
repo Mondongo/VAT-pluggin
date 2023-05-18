@@ -144,16 +144,13 @@ else:
     mDagPath = om.MDagPath()
     mSelectionList.getDagPath(0, mDagPath)
     meshObject = mDagPath.node()
-    fnMesh = om.MFnMesh(mDagPath)
-
-
-    meshFn = om.MFnMesh(mDagPath)
+    mFnMesh = om.MFnMesh(mDagPath)
 
     points = om.MPointArray()
-    meshFn.getPoints(points, om.MSpace.kWorld)
+    mFnMesh.getPoints(points, om.MSpace.kWorld)
 
     normals = om.MFloatVectorArray()
-    meshFn.getVertexNormals(True, normals, om.MSpace.kWorld)
+    mFnMesh.getVertexNormals(True, normals, om.MSpace.kWorld)
 
     for i in range(normals.length()):
         normal = normals[i]

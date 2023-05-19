@@ -1,4 +1,5 @@
 # ======================================================================>
+import math
 import maya.OpenMaya as OpenMaya
 import maya.cmds as cmds
 
@@ -43,13 +44,20 @@ def create_vat_window(*args):
 
     cmds.rowLayout(numberOfColumns=2, adjustableColumn=2)
     cmds.button(label='  Create VAT UVs  ',command=create_vat_uvs, height=50)
-    cmds.button(label='Create VAT texture',command=create_vat_texture, height=50)
+    cmds.button(label='Create VAT texture',command=create_vat_textures, height=50)
     cmds.setParent(master_layout)
     cmds.separator(height=20)
 
     cmds.scrollField('info_text_input', editable=False, wordWrap=True, height=100, text='' )
 
     cmds.showWindow()
+
+def normalizeVector3(x, y, z):
+    mag = math.sqrt((x**2)+(y**2)+(z**2))
+    nX = x/mag
+    nY = y/mag
+    nZ = z/mag
+    return nX, nY, nZ
 
 def remap(num, old_min, old_max, new_min, new_max):
     if old_min == old_max:
@@ -86,28 +94,33 @@ def get_input_data():
         raise Exception('export folder path cant be empty')
     return normal_checkbox, start_frame, end_frame
 
-def get_mesh():
+def get_mFnMesh():
     print('- get mesh')
-    sel = cmds.ls(sl=True, type='mesh', dag=True, long=True)
-    if sel:
-        cmds.select(sel[0])
-        return sel[0]
-    else:
+    mSelectionList = OpenMaya.MSelectionList()
+    OpenMaya.MGlobal.getActiveSelectionList(mSelectionList)
+    if mSelectionList.isEmpty():
         cmds.select(clear=True)
         raise Exception("select an object type 'mesh'")
+    else:
+        mDagPath = OpenMaya.MDagPath()
+        mSelectionList.getDagPath(0, mDagPath)
+        meshObject = mDagPath.node()
+        mFnMesh = OpenMaya.MFnMesh(mDagPath)
+        return mFnMesh
 
-def get_vertices(mesh):
-    print('- get vertices')
-    return cmds.ls("%s.vtx[*]" % mesh, fl=True)
-
-def get_data(start_frame, end_frame, vertices):
+def get_data(start_frame, end_frame, mFnMesh):
     print('- get vetex position and normal data')
-    
+
+    points = OpenMaya.MPointArray()
+    mFnMesh.getPoints(points, OpenMaya.MSpace.kWorld)
+
+    normals = OpenMaya.MFloatVectorArray()
+    mFnMesh.getVertexNormals(True, normals, OpenMaya.MSpace.kWorld)
+
     #get first vertex reference pos ---------------->
-    firstVPos = cmds.xform(vertices[0], query=True, worldSpace=True, translation=True)
-    minX = maxX = firstVPos[0]
-    minY = maxY = firstVPos[1]
-    minZ = maxZ = firstVPos[2]
+    minX = maxX = points[0].x
+    minY = maxY = points[0].y
+    minZ = maxZ = points[0].z
 
     vertexPos = []
     vertexNor = []
@@ -116,9 +129,10 @@ def get_data(start_frame, end_frame, vertices):
 
         vPos = []
         vNor = []
-        for v in vertices:
-            #get raw vertex pos ---------------->
-            pos = cmds.xform(v, query=True, worldSpace=True, translation=True)
+        for i in range(points.length()):
+
+            mFnMesh.getPoints(points, OpenMaya.MSpace.kWorld)
+            pos = [points[i].x, points[i].y, points[i].z]
             vPos.append(pos)
 
             # min max X -------->
@@ -139,24 +153,18 @@ def get_data(start_frame, end_frame, vertices):
             if pos[2] > maxZ:
                 maxZ = pos[2]
 
-            #get smooth vertex normal ---------------->
-            normals = cmds.polyNormalPerVertex(v, query=True, xyz=True)
-            nX = nY = nZ = 0
-            for n in range(0, len(normals), 3):
-                nX += normals[n+0]
-                nY += normals[n+1]
-                nZ += normals[n+2]
-            totalNormals = len(normals) / 3
-            nX = remap((nX / totalNormals), -1, 1, 0, 1)
-            nY = remap((nY / totalNormals), -1, 1, 0, 1)
-            nZ = remap((nZ / totalNormals), -1, 1, 0, 1)
+            #get average vertex normal ---------------->
+            mFnMesh.getVertexNormals(True, normals, OpenMaya.MSpace.kWorld)
+            nX = remap(normals[i].x, -1, 1, 0, 1)
+            nY = remap(normals[i].y, -1, 1, 0, 1)
+            nZ = remap(normals[i].z, -1, 1, 0, 1)
             vNor.append([nX, nY, nZ])
 
         #append data to main ---------------->
         vertexPos.append(vPos)
         vertexNor.append(vNor)
     
-    #normalize frames position base on range ---------------->
+    #remap positions base on BoundingBox ---------------->
     for f in vertexPos:
         for v in f:
             v[0] = remap(v[0], minX, maxX, 0, 1)
@@ -252,16 +260,15 @@ def log_Info(info_text):
 
 def create_vat_uvs(*args):
     print('- create VAT UVs')
-    mesh = get_mesh()
+    mesh = get_mFnMesh()
     gererate2UV(mesh)
     log_Info('VAT UVs created on second UVSet')
 
-def create_vat_texture(*args):
+def create_vat_textures(*args):
     print('- attempt to create VAT')
     normal_checkbox, start_frame, end_frame = get_input_data()
-    mesh = get_mesh()
-    vertices = get_vertices(mesh)
-    vertexPos, vertexNor, minX, maxX, minY, maxY, minZ, maxZ = get_data(start_frame, end_frame, vertices)
+    mFnMesh = get_mFnMesh()
+    vertexPos, vertexNor, minX, maxX, minY, maxY, minZ, maxZ = get_data(start_frame, end_frame, mFnMesh)
     gen_Pos_Texture(vertexPos)
     if normal_checkbox:
         gen_Nor_Texture(vertexNor)

@@ -1,17 +1,12 @@
-# ======================================================================>
 import math
 import maya.OpenMaya as OpenMaya
 import maya.cmds as cmds
 
-
-#global vars ----------->
 win_Name = "VATwindow"
 win_Title = "Vertex Animation Texture Generator (VAT)"
 win_Width = 300
-export_location = 'C:/Users/rgugu/OneDrive/Desktop'
+export_location = ""
 
-
-#functs ----------->
 def create_vat_window(*args):
     if cmds.window(win_Name, exists=True):
         cmds.deleteUI(win_Name)
@@ -277,7 +272,6 @@ max Y -> {round(maxY, 6)}
 min Z -> {round(minZ, 6)}
 max Z -> {round(maxZ, 6)}'''
     log_Info(info_text)
-
 
 # run the plugin ----------->
 create_vat_window()
